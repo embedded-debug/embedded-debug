@@ -1,0 +1,184 @@
+{
+  "name": "embedded-debug",
+  "displayName": "Embedded Debug",
+  "version": "0.0.1",
+  "publisher": "liangdi",
+  "description": "Embedded Debug for VS Code.",
+  "author": {
+    "name": "Liangdi",
+    "email": "wu@liangdi.me"
+  },
+  "license": "MIT",
+  "keywords": [
+    "embedded debug"
+  ],
+  "engines": {
+    "vscode": "^1.49.0"
+  },
+  "icon": "assets/images/logo.png",
+  "categories": [
+    "Debuggers"
+  ],
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/embedded-debug/embedded-debug"
+  },
+  "bugs": {
+    "url": "https://github.com/embedded-debug/embedded-debug/issues"
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run package-ext",
+    "compile": "tsc -p ./",
+    "lint": "eslint src --ext ts",
+    "watch": "webpack --watch --devtool nosources-source-map --info-verbosity verbose --config ./build/extension.webpack.config.js",
+    "watch2": "tsc -watch -p ./",
+    "pretest": "yarn run compile && yarn run lint",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "package-ext": "webpack --mode production --config ./build/extension.webpack.config.js"
+  },
+  "dependencies": {
+    "await-notify": "1.0.1",
+    "vscode-debugadapter": "^1.43.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.49.0",
+    "@types/glob": "^7.1.3",
+    "@types/mocha": "^8.0.0",
+    "@types/node": "^14.0.27",
+    "eslint": "^7.6.0",
+    "@typescript-eslint/eslint-plugin": "^3.8.0",
+    "@typescript-eslint/parser": "^3.8.0",
+    "glob": "^7.1.6",
+    "mocha": "^8.0.1",
+    "typescript": "^3.8.3",
+    "vscode-debugadapter-testsupport": "^1.43.0",
+    "vsce": "^1.81.1",
+    "ts-loader": "^8.0.3",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
+  },
+  "main": "./dist/ext/extension.js",
+  "activationEvents": [
+    "onDebugDynamicConfigurations:embedded-debug",
+    "onCommand:extension.embedded-debug.getProgramName",
+    "onCommand:extension.embedded-debug.runEditorContents",
+    "onCommand:extension.embedded-debug.debugEditorContents"
+  ],
+  "contributes": {
+    "menus": {
+      "editor/title": [
+        {
+          "command": "extension.embedded-debug.runEditorContents",
+          "when": "resourceLangId == rust",
+          "group": "1_run@10"
+        },
+        {
+          "command": "extension.embedded-debug.debugEditorContents",
+          "when": "resourceLangId == rust",
+          "group": "1_run@20"
+        }
+      ],
+      "commandPalette": [
+				{
+					"command": "extension.embedded-debug.debugEditorContents",
+					"when": "resourceLangId == markdown"
+				},
+				{
+					"command": "extension.embedded-debug.runEditorContents",
+					"when": "resourceLangId == markdown"
+				}
+			],
+      "debug/variables/context": [
+        {
+          "command": "extension.embedded-debug.toggleFormatting",
+          "when": "debugType == 'embedded-debug' && debugProtocolVariableMenuContext == 'simple'"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "extension.embedded-debug.debugEditorContents",
+        "title": "Debug File",
+        "category": "Embedded Debug",
+				"enablement": "!inDebugMode",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "extension.embedded-debug.runEditorContents",
+        "title": "Run File",
+        "category": "Embedded Debug",
+				"enablement": "!inDebugMode",
+        "icon": "$(play)"
+      },
+      {
+        "command": "extension.embedded-debug.toggleFormatting",
+        "title": "Toggle between decimal and hex formatting"
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "rust"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "embedded-debug",
+        "label": "Embedded Debug",
+        "program": "./out/debugAdapter.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Absolute path to a text file.",
+                "default": "${workspaceFolder}/${command:AskForProgramName}"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Automatically stop after launch.",
+                "default": true
+              },
+              "trace": {
+                "type": "boolean",
+                "description": "Enable logging of the Debug Adapter Protocol.",
+                "default": true
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "embedded-debug",
+            "request": "launch",
+            "name": "Ask for file name",
+            "program": "${workspaceFolder}/${command:AskForProgramName}",
+            "stopOnEntry": true
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Embedded Debug: Launch",
+            "description": "A new configuration for 'debugging' a user selected firemware file.",
+            "body": {
+              "type": "embedded-debug",
+              "request": "launch",
+              "name": "Ask for file name",
+              "program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\"",
+              "stopOnEntry": true
+            }
+          }
+        ],
+        "variables": {
+          "AskForProgramName": "extension.embedded-debug.getProgramName"
+        }
+      }
+    ]
+  }
+}
