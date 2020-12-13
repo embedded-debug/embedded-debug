@@ -18,14 +18,12 @@ import { setTimeout } from 'timers';
 import { EventEmitter } from 'events';
 
 import { OpenOCDServerController } from './openocd';
-import { ExternalServerController } from './external';
 import { SymbolTable } from './backend/symbols';
 import { SymbolInformation, SymbolScope, SymbolType } from './symbols';
 import { TcpPortScanner } from './tcpportscanner';
 
 const SERVER_TYPE_MAP = {
-    openocd: OpenOCDServerController,
-    external: ExternalServerController
+    openocd: OpenOCDServerController
 };
 
 class ExtendedVariable {
@@ -126,7 +124,7 @@ export class GDBDebugSession extends DebugSession {
     }
 
     protected initDebugger() {
-        console.log("init debugger");
+        this.handleMsg("log","init debug log");
         this.miDebugger.on('launcherror', this.launchError.bind(this));
         this.miDebugger.on('quit', this.quitEvent.bind(this));
         this.miDebugger.on('exited-normally', this.quitEvent.bind(this));
@@ -200,34 +198,25 @@ export class GDBDebugSession extends DebugSession {
     private normalizeArguments(args: ConfigurationArguments): ConfigurationArguments {
         args.graphConfig = args.graphConfig || [];
         
-        if (args.executable && !path.isAbsolute(args.executable)) {
-            args.executable = path.normalize(path.join(args.cwd, args.executable));
+        if (args.program && !path.isAbsolute(args.program)) {
+            args.program = path.normalize(path.join(args.cwd, args.program));
         }
 
         if (args.svdFile && !path.isAbsolute(args.svdFile)) {
             args.svdFile = path.normalize(path.join(args.cwd, args.svdFile));
         }
 
-        if (args.swoConfig && args.swoConfig.decoders) {
-            args.swoConfig.decoders = args.swoConfig.decoders.map((dec) => {
-                if (dec.type === 'advanced' && dec.decoder && !path.isAbsolute(dec.decoder)) {
-                    dec.decoder = path.normalize(path.join(args.cwd, dec.decoder));
-                }
-                return dec;
-            });
-        }
 
         return args;
     }
 
     private processLaunchAttachRequest(response: DebugProtocol.LaunchResponse, attach: boolean) {
-        console.log('processLaunchAttachRequest:',this.args)
-        if (!fs.existsSync(this.args.executable)) {
+        if (!fs.existsSync(this.args.program)) {
             this.sendErrorResponse(
                 response,
                 103,
-                `Unable to find executable file at ${this.args.executable}.`
-            );
+                `Unable to find executable file at ${this.args.program}.`
+            );  ``
             return;
         }
         
@@ -249,10 +238,15 @@ export class GDBDebugSession extends DebugSession {
         TcpPortScanner.findFreePorts(portFinderOpts, GDBServer.LOCALHOST).then((ports) => {
             this.createPortsMap(ports);
             this.serverController.setPorts(this.ports);
-
-            const executable = this.serverController.serverExecutable();
-            const args = this.serverController.serverArguments();
-
+            let executable = "";
+            let args = [];
+            try {
+                executable = this.serverController.serverExecutable();
+                args = this.serverController.serverArguments();
+            } catch (error) {
+                this.handleMsg("log",`error: ${error}\n`);
+            }
+           
             let gdbExePath = os.platform() !== 'win32' ? `${this.args.toolchainPrefix}-gdb` : `${this.args.toolchainPrefix}-gdb.exe`;
             if (this.args.toolchainPath) {
                 gdbExePath = path.normalize(path.join(this.args.toolchainPath, gdbExePath));
@@ -314,7 +308,7 @@ export class GDBDebugSession extends DebugSession {
                 }
             });
             this.server.on('launcherror', (err) => {
-                this.sendErrorResponse(response, 103, `Failed to launch ${this.serverController.name} GDB Server: ${err.toString()}`);
+                this.sendErrorResponse(response, 103, `Server launcherror ${this.serverController.name} GDB Server: ${err.toString()}`);
             });
 
             let timeout = setTimeout(() => {
@@ -335,106 +329,112 @@ export class GDBDebugSession extends DebugSession {
                 }
 
                 this.serverController.serverLaunchCompleted();
-                
-                let gdbargs = ['-q', '--interpreter=mi2'];
-                gdbargs = gdbargs.concat(this.args.debuggerArgs || []);
-
-                this.miDebugger = new MI2(gdbExePath, gdbargs);
-                this.initDebugger();
-
-                this.miDebugger.printCalls = !!this.args.showDevDebugOutput;
-                this.miDebugger.debugOutput = !!this.args.showDevDebugOutput;
-
-                const commands = [`interpreter-exec console "source ${this.args.extensionPath}/support/gdbsupport.init"`];
-                if (this.args.demangle) {
-                    commands.push('interpreter-exec console "set print demangle on"');
-                    commands.push('interpreter-exec console "set print asm-demangle on"');
-                }
-                commands.push(...this.serverController.initCommands());
-                
-                if (attach) {
-                    commands.push(...this.args.preAttachCommands.map(COMMAND_MAP));
-                    const attachCommands = this.args.overrideAttachCommands != null ?
-                        this.args.overrideAttachCommands.map(COMMAND_MAP) : this.serverController.attachCommands();
-                    commands.push(...attachCommands);
-                    commands.push(...this.args.postAttachCommands.map(COMMAND_MAP));
-                    commands.push(...this.serverController.swoCommands());
-                }
-                else {
-                    commands.push(...this.args.preLaunchCommands.map(COMMAND_MAP));
-                    const launchCommands = this.args.overrideLaunchCommands != null ?
-                        this.args.overrideLaunchCommands.map(COMMAND_MAP) : this.serverController.launchCommands();
-                    commands.push(...launchCommands);
-                    commands.push(...this.args.postLaunchCommands.map(COMMAND_MAP));
-                    commands.push(...this.serverController.swoCommands());
-                }
-                
-                this.serverController.debuggerLaunchStarted();
-                this.miDebugger.once('debug-ready', () => {
-                    this.debugReady = true;
-                    this.attached = attach;
-                });
-
-                if (true) {
-                    const dbgMsg = `Launching GDB: "${gdbExePath}" ` + gdbargs.map((s) => {
-                        return '"' + s.replace(/"/g, '\\"') + '"';
-                    }).join(' ') + '\n';
-                    this.handleMsg('log', dbgMsg);
-                }
-
-                this.disableSendStoppedEvents = (!attach && this.args.runToMain) ? true : false;
-                this.miDebugger.connect(this.args.cwd, this.args.executable, commands).then(() => {
-                    this.started = true;
-                    this.serverController.debuggerLaunchCompleted();
-                    this.sendResponse(response);
-
-                    const launchComplete = () => {
-                        this.disableSendStoppedEvents = false;
-                        setTimeout(() => {
-                            this.stopped = true;
-                            this.stoppedReason = 'start';
-                            this.stoppedThreadId = this.currentThreadId;
-                            this.sendEvent(new StoppedEvent('start', this.currentThreadId, true));
-                            this.sendEvent(new CustomStoppedEvent('start', this.currentThreadId));
-                        }, 50);
-                    };
-
-                    if (this.args.runToMain) {
-                        this.miDebugger.sendCommand('break-insert -t --function main').then(() => {
-                            this.miDebugger.once('generic-stopped', launchComplete);
-                            // To avoid race conditions between finishing configuration, we should stay
-                            // in stopped mode. Or, we end up clobbering the stopped event that might come
-                            // during setting of any additional breakpoints. Note that configDone may already
-                            // have happened if there were no user breakpoints.
-                            if (this.configDone) {
-                                this.miDebugger.sendCommand('exec-continue');
-                            } else {
-                                this.onConfigDone.once('done', () => {
-                                    this.miDebugger.sendCommand('exec-continue');
-                                });
-                            }
-                        });
+                try {
+                    let gdbargs = ['-q', '--interpreter=mi2'];
+                    gdbargs = gdbargs.concat(this.args.debuggerArgs || []);
+                    this.handleMsg('log',`gdbExePath: ${gdbExePath}\n`);
+                    this.miDebugger = new MI2(gdbExePath, gdbargs);
+                    this.initDebugger();
+    
+                    this.miDebugger.printCalls = !!this.args.showDevDebugOutput;
+                    this.miDebugger.debugOutput = !!this.args.showDevDebugOutput;
+    
+                    // const commands = [`interpreter-exec console "source ${this.args.extensionPath}/support/gdbsupport.init"`];
+                    const commands = [];
+                    if (this.args.demangle) {
+                        commands.push('interpreter-exec console "set print demangle on"');
+                        commands.push('interpreter-exec console "set print asm-demangle on"');
+                    }
+                    commands.push(...this.serverController.initCommands());
+                    
+                    if (attach) {
+                        commands.push(...this.args.preAttachCommands.map(COMMAND_MAP));
+                        const attachCommands = this.args.overrideAttachCommands != null ?
+                            this.args.overrideAttachCommands.map(COMMAND_MAP) : this.serverController.attachCommands();
+                        commands.push(...attachCommands);
+                        commands.push(...this.args.postAttachCommands.map(COMMAND_MAP));
                     }
                     else {
-                        launchComplete();
-                        if (this.configDone) {
-                            this.runPostStartSessionCommands(false);
-                        } else {
-                            this.onConfigDone.once('done', () => {
-                                this.runPostStartSessionCommands(false);
+                        commands.push(...this.args.preLaunchCommands.map(COMMAND_MAP));
+                        const launchCommands = this.args.overrideLaunchCommands != null ?
+                            this.args.overrideLaunchCommands.map(COMMAND_MAP) : this.serverController.launchCommands();
+                        commands.push(...launchCommands);
+                        commands.push(...this.args.postLaunchCommands.map(COMMAND_MAP));
+                    }
+                    
+                    this.serverController.debuggerLaunchStarted();
+                    this.miDebugger.once('debug-ready', () => {
+                        this.debugReady = true;
+                        this.attached = attach;
+                    });
+    
+                    if (true) {
+                        const dbgMsg = `Launching GDB: "${gdbExePath}" ` + gdbargs.map((s) => {
+                            return '"' + s.replace(/"/g, '\\"') + '"';
+                        }).join(' ') + '\n';
+                        this.handleMsg('log', dbgMsg);
+                    }
+    
+                    this.disableSendStoppedEvents = (!attach && this.args.runToMain) ? true : false;
+                    this.handleMsg('log','before run gdb\n');
+                    this.miDebugger.connect(this.args.cwd, this.args.program, commands).then(() => {
+                        this.started = true;
+                        this.serverController.debuggerLaunchCompleted();
+                        this.sendResponse(response);
+    
+                        const launchComplete = () => {
+                            this.disableSendStoppedEvents = false;
+                            setTimeout(() => {
+                                this.stopped = true;
+                                this.stoppedReason = 'start';
+                                this.stoppedThreadId = this.currentThreadId;
+                                this.sendEvent(new StoppedEvent('start', this.currentThreadId, true));
+                                this.sendEvent(new CustomStoppedEvent('start', this.currentThreadId));
+                            }, 50);
+                        };
+    
+                        if (this.args.runToMain) {
+                            this.miDebugger.sendCommand('break-insert -t --function main').then(() => {
+                                this.miDebugger.once('generic-stopped', launchComplete);
+                                // To avoid race conditions between finishing configuration, we should stay
+                                // in stopped mode. Or, we end up clobbering the stopped event that might come
+                                // during setting of any additional breakpoints. Note that configDone may already
+                                // have happened if there were no user breakpoints.
+                                if (this.configDone) {
+                                    this.miDebugger.sendCommand('exec-continue');
+                                } else {
+                                    this.onConfigDone.once('done', () => {
+                                        this.miDebugger.sendCommand('exec-continue');
+                                    });
+                                }
                             });
                         }
-                    }
-                }, (err) => {
-                    this.sendErrorResponse(response, 103, `Failed to launch GDB: ${err.toString()}`);
-                    this.sendEvent(new TelemetryEvent('Error', 'Launching GDB', err.toString()));
-                });
+                        else {
+                            launchComplete();
+                            if (this.configDone) {
+                                this.runPostStartSessionCommands(false);
+                            } else {
+                                this.onConfigDone.once('done', () => {
+                                    this.runPostStartSessionCommands(false);
+                                });
+                            }
+                        }
+                    }, (err) => {
+                        this.sendErrorResponse(response, 103, `Failed to launch GDB: ${err.toString()}`);
+                        this.sendEvent(new TelemetryEvent('Error', 'Launching GDB', err.toString()));
+                    });
+                } catch (error) {
+                    this.handleMsg("log",`mi server error: ${error}\n`);
+                }
+               
+               
 
             }, (error) => {
                 if (timeout) {
                     clearTimeout(timeout);
                     timeout = null;
                 }
+                this.handleMsg("log",`launch ${this.serverController.name} timeout: ${error.toString}`);
                 this.sendEvent(new TelemetryEvent(
                     'Error',
                     'Launching Server',
@@ -471,6 +471,7 @@ export class GDBDebugSession extends DebugSession {
 
     private createPortsMap(ports: number[]) {
         const numProcs = this.args.numberOfProcessors;
+        this.handleMsg("log",`num pomproces:${numProcs}\n`)
         this.ports = {};
         let idx = 0;
         // Ports are allocated so that all ports of same type come consecutively, then next and
@@ -813,7 +814,6 @@ export class GDBDebugSession extends DebugSession {
                 this.args.overrideRestartCommands.map(COMMAND_MAP) : this.serverController.restartCommands();
             commands.push(...restartCommands);
             commands.push(...this.args.postRestartCommands.map(COMMAND_MAP));
-            commands.push(...this.serverController.swoCommands());
 
             this.miDebugger.restart(commands).then((done) => {
                 this.sendResponse(response);
@@ -2025,7 +2025,7 @@ export class GDBDebugSession extends DebugSession {
                 if (this.args.showDevDebugOutput) {
                     this.handleMsg('stderr', 'hover: ' + e.toString());
                 }
-                // this.sendErrorResponse(response, 7, e.toString());
+                this.sendErrorResponse(response, 7, e.toString());
             }
         }
         else {

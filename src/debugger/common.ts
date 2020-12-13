@@ -87,6 +87,7 @@ export interface ConfigurationArguments extends DebugProtocol.LaunchRequestArgum
     toolchainPath: string;
     toolchainPrefix: string;
     executable: string;
+    program: string;
     servertype: string;
     serverpath: string;
     serverArgs: string[];
@@ -177,7 +178,6 @@ export interface GDBServerController extends EventEmitter {
     launchCommands(): string[];
     attachCommands(): string[];
     restartCommands(): string[];
-    swoCommands(): string[];
     serverExecutable(): string;
     serverArguments(): string[];
     initMatch(): RegExp;

@@ -57,7 +57,7 @@ export class MI2 extends EventEmitter implements IBackend {
             
             Promise.all(promises).then(() => {
                 this.emit('debug-ready');
-                resolve();
+                resolve(null);
             }, reject);
         });
     }

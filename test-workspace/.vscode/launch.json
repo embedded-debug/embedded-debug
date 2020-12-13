@@ -9,9 +9,16 @@
 			"type": "embedded-debug",
 			"request": "launch",
 			"name": "Debug Rust Program",
-			"program": "${workspaceFolder}/src/main.rs",
-			"stopOnEntry": true,
-			"trace": true,
+			"program": "${workspaceFolder}/path to bin",
+			"servertype": "openocd",
+			"cwd": "${workspaceRoot}",
+			"gdbpath": "riscv32-unknown-elf-gdb",
+			"serverpath": "path to openocd",
+			"configFiles": [
+				"jtag.cfg",
+				"gd32vf103.cfg"
+			],
+			"svdFile": "${workspaceFolder}/GD32VF103.svd"
 		}
 	]
 }

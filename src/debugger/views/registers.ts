@@ -64,7 +64,7 @@ export class RegisterTreeProvider implements TreeDataProvider<BaseNode> {
 
         this.loaded = true;
 
-        workspace.findFiles('.vscode/.cortex-debug.registers.state.json', null, 1).then((value) => {
+        workspace.findFiles('.vscode/.embedded-debug.registers.state.json', null, 1).then((value) => {
             if (value.length > 0) {
                 const fspath = value[0].fsPath;
                 const data = fs.readFileSync(fspath, 'utf8');
@@ -126,7 +126,7 @@ export class RegisterTreeProvider implements TreeDataProvider<BaseNode> {
 
     public debugSessionTerminated() {
         if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {
-            const fspath = path.join(workspace.workspaceFolders[0].uri.fsPath, '.vscode', '.cortex-debug.registers.state.json');
+            const fspath = path.join(workspace.workspaceFolders[0].uri.fsPath, '.vscode', '.embedded-debug.registers.state.json');
             this._saveState(fspath);
         }
 

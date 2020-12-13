@@ -55,7 +55,7 @@ export class PeripheralTreeProvider implements vscode.TreeDataProvider<Periphera
 
     public refresh(): void {
         //TODO reimplement
-        //this._onDidChangeTreeData.fire();
+        this._onDidChangeTreeData.fire(null);
     }
 
     public getTreeItem(element: PeripheralBaseNode): vscode.TreeItem | Promise<vscode.TreeItem> {
@@ -84,13 +84,13 @@ export class PeripheralTreeProvider implements vscode.TreeDataProvider<Periphera
             this.peripherials = [];
             this.loaded = false;
             //TODO reimplement
-            //this._onDidChangeTreeData.fire();
+            this._onDidChangeTreeData.fire(null);
             
             if (svdfile) {
                 setTimeout(() => {
                     this.loadSVD(svdfile).then(
                         () => {
-                            vscode.workspace.findFiles('.vscode/.cortex-debug.peripherals.state.json', null, 1).then((value) => {
+                            vscode.workspace.findFiles('.vscode/.embedded-debug.peripherals.state.json', null, 1).then((value) => {
                                 if (value.length > 0) {
                                     const fspath = value[0].fsPath;
                                     const data = fs.readFileSync(fspath, 'utf8');
@@ -132,7 +132,7 @@ export class PeripheralTreeProvider implements vscode.TreeDataProvider<Periphera
 
     public debugSessionTerminated(): Thenable<any> {
         if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-            const fspath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, '.vscode', '.cortex-debug.peripherals.state.json');
+            const fspath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, '.vscode', '.embedded-debug.peripherals.state.json');
             this.saveState(fspath);
         }
         

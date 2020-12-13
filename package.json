@@ -67,10 +67,8 @@
   },
   "main": "./dist/ext/extension.js",
   "activationEvents": [
-    "onDebugDynamicConfigurations:embedded-debug",
-    "onCommand:extension.embedded-debug.getProgramName",
-    "onCommand:extension.embedded-debug.runEditorContents",
-    "onCommand:extension.embedded-debug.debugEditorContents"
+    "onDebugResolve:embedded-debug",
+    "onDebugDynamicConfigurations:embedded-debug"
   ],
   "contributes": {
     "menus": {
@@ -89,11 +87,11 @@
       "commandPalette": [
         {
           "command": "extension.embedded-debug.debugEditorContents",
-          "when": "resourceLangId == markdown"
+          "when": "resourceLangId == rust"
         },
         {
           "command": "extension.embedded-debug.runEditorContents",
-          "when": "resourceLangId == markdown"
+          "when": "resourceLangId == rust"
         }
       ],
       "debug/variables/context": [
@@ -145,15 +143,33 @@
                 "description": "Absolute path to a text file.",
                 "default": "${workspaceFolder}/${command:AskForProgramName}"
               },
-              "stopOnEntry": {
-                "type": "boolean",
-                "description": "Automatically stop after launch.",
-                "default": true
+              "servertype": {
+                "type": "string",
+                "description": "Debugger Server",
+                "default": "openocd"
               },
-              "trace": {
-                "type": "boolean",
-                "description": "Enable logging of the Debug Adapter Protocol.",
-                "default": true
+              "gdbpath": {
+                "type": "string",
+                "description": "config gdb path"
+              },
+              "serverpath": {
+                "type": "string",
+                "description": "gdb server path"
+              },
+              "configFiles": {
+                "description": "OpenOCD configuration file(s) to load",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "cwd":{
+                "type":"string",
+                "default":"${workspaceRoot}"
+              },
+              "svdFile": {
+                "type":"string",
+                "description":"svd file path"
               }
             }
           }
@@ -179,27 +195,23 @@
               "stopOnEntry": true
             }
           }
-        ],
-        "variables": {
-          "AskForProgramName": "extension.embedded-debug.getProgramName"
-        }
-        
+        ]
+     
       }
-      
     ],
     "views": {
       "debug": [
-          {
-              "id": "embedded-debug.peripherals",
-              "name": "Embedded Peripherals",
-              "when": "debugType == embedded-debug"
-          },
-          {
-              "id": "embedded-debug.registers",
-              "name": "Embedded Registers",
-              "when": "debugType == embedded-debug"
-          }
+        {
+          "id": "embedded-debug.peripherals",
+          "name": "Embedded Peripherals",
+          "when": "debugType == embedded-debug"
+        },
+        {
+          "id": "embedded-debug.registers",
+          "name": "Embedded Registers",
+          "when": "debugType == embedded-debug"
+        }
       ]
-  }
+    }
   }
 }

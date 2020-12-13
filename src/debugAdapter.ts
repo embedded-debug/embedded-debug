@@ -55,6 +55,7 @@ args.forEach(function (val, index, array) {
 console.info('start debugger.....',args);
 
 DebugSession.run(GDBDebugSession);
+
 // if (port > 0) {
 
 // 	// start a server that creates a new session for every connection request

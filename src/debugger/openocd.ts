@@ -3,19 +3,16 @@ import { GDBServerController, ConfigurationArguments, SWOConfigureEvent, calcula
 import * as os from 'os';
 import * as tmp from 'tmp';
 import * as fs from 'fs';
-import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 
 export class OpenOCDServerController extends EventEmitter implements GDBServerController {
     public portsNeeded = ['gdbPort'];
     public name = 'OpenOCD';
-    private swoPath: string;
     private args: ConfigurationArguments;
     private ports: { [name: string]: number };
 
     constructor() {
         super();
-        this.swoPath = tmp.tmpNameSync();
     }
 
     public setPorts(ports: { [name: string]: number }): void {
@@ -63,38 +60,6 @@ export class OpenOCDServerController extends EventEmitter implements GDBServerCo
         return commands;
     }
 
-    public swoCommands(): string[] {
-        const commands = [];
-        if (this.args.swoConfig.enabled) {
-            const swocommands = this.SWOConfigurationCommands();
-            commands.push(...swocommands);
-        }
-        return commands;
-    }
-
-    private SWOConfigurationCommands(): string[] {
-        const portMask = '0x' + calculatePortMask(this.args.swoConfig.decoders).toString(16);
-        const swoFrequency = this.args.swoConfig.swoFrequency;
-        const cpuFrequency = this.args.swoConfig.cpuFrequency;
-
-        const ratio = Math.floor(cpuFrequency / swoFrequency) - 1;
-        
-        const commands: string[] = [
-            'EnableITMAccess',
-            `BaseSWOSetup ${ratio}`,
-            'SetITMId 1',
-            'ITMDWTTransferEnable',
-            'DisableITMPorts 0xFFFFFFFF',
-            `EnableITMPorts ${portMask}`,
-            'EnableDWTSync',
-            'ITMSyncEnable',
-            'ITMGlobalEnable'
-        ];
-
-        commands.push(this.args.swoConfig.profile ? 'EnablePCSample' : 'DisablePCSample');
-        
-        return commands.map((c) => `interpreter-exec console "${c}"`);
-    }
 
     public serverExecutable(): string {
         if (this.args.serverpath) { return this.args.serverpath; }
@@ -138,20 +103,6 @@ export class OpenOCDServerController extends EventEmitter implements GDBServerCo
 
         const commands = [];
 
-        if (this.args.swoConfig.enabled) {
-            let tpiuIntExt;
-            if (os.platform() === 'win32') {
-                this.swoPath = this.swoPath.replace(/\\/g, '/');
-            }
-            if (this.args.swoConfig.source === 'probe') {
-                tpiuIntExt = `internal ${this.swoPath}`;
-            }
-            else {
-                tpiuIntExt = 'external';
-            }
-            // tslint:disable-next-line:max-line-length
-            commands.push(`tpiu config ${tpiuIntExt} uart off ${this.args.swoConfig.cpuFrequency} ${this.args.swoConfig.swoFrequency}`);
-        }
 
         if (commands.length > 0) {
             serverargs.push('-c', commands.join('; '));
@@ -175,25 +126,9 @@ export class OpenOCDServerController extends EventEmitter implements GDBServerCo
     }
 
     public serverLaunchStarted(): void {
-        if (this.args.swoConfig.enabled && this.args.swoConfig.source === 'probe' && os.platform() !== 'win32') {
-            const mkfifoReturn = ChildProcess.spawnSync('mkfifo', [this.swoPath]);
-            this.emit('event', new SWOConfigureEvent({ type: 'fifo', path: this.swoPath }));
-        }
     }
 
     public serverLaunchCompleted(): void {
-        if (this.args.swoConfig.enabled) {
-            if (this.args.swoConfig.source === 'probe' && os.platform() === 'win32') {
-                this.emit('event', new SWOConfigureEvent({ type: 'file', path: this.swoPath }));
-            }
-            else if (this.args.swoConfig.source !== 'probe') {
-                this.emit('event', new SWOConfigureEvent({
-                    type: 'serial',
-                    device: this.args.swoConfig.source,
-                    baudRate: this.args.swoConfig.swoFrequency
-                }));
-            }
-        }
     }
 
     public debuggerLaunchStarted(): void {}
