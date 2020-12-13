@@ -16,11 +16,11 @@ export interface NodeSetting {
 }
 
 export class AdapterOutputEvent extends Event implements DebugProtocol.Event {
-    public body: {
-        type: string,
-        content: string
+    public body!: {
+        type: string;
+        content: string;
     };
-    public event: string;
+    public event!: string;
 
     constructor(content: string, type: string) {
         super('adapter-output', { content: content, type: type });
@@ -28,7 +28,7 @@ export class AdapterOutputEvent extends Event implements DebugProtocol.Event {
 }
 
 export class StoppedEvent extends Event implements DebugProtocol.Event {
-    public readonly body: {
+    public readonly body!: {
         reason: string;
         description?: string;
         threadId?: number;
@@ -46,12 +46,12 @@ export class StoppedEvent extends Event implements DebugProtocol.Event {
 }
 
 export class SWOConfigureEvent extends Event implements DebugProtocol.Event {
-    public body: {
-        type: string,
-        port: number,
-        path: string
+    public body!: {
+        type: string;
+        port: number;
+        path: string;
     };
-    public event: string;
+    public event!: string;
 
     constructor(params: any) {
         const body = params;
@@ -60,13 +60,13 @@ export class SWOConfigureEvent extends Event implements DebugProtocol.Event {
 }
 
 export class TelemetryEvent extends Event implements DebugProtocol.Event {
-    public body: {
-        category: string,
-        action: string,
-        label: string,
-        parameters: { [key: string]: string }
+    public body!: {
+        category: string;
+        action: string;
+        label: string;
+        parameters: { [key: string]: string; };
     };
-    public event: string;
+    public event!: string;
 
     constructor(category: string, action: string, label: string, parameters: { [key: string]: string } = {}) {
         const body = { category: category, action: action, label: label, parameters: parameters };

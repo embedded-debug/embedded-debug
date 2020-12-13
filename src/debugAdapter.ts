@@ -3,10 +3,11 @@
  *--------------------------------------------------------*/
 
 import { EmbeddedDebugSession } from './embeddedDebug';
-
 import { readFile } from 'fs';
 import * as Net from 'net';
 import { FileAccessor } from './debugRuntime';
+import { DebugSession } from 'vscode-debugadapter';
+import { GDBDebugSession } from './debugger/gdb';
 
 /*
  * debugAdapter.js is the entrypoint of the debug adapter when it runs as a separate process.
@@ -50,25 +51,30 @@ args.forEach(function (val, index, array) {
 	}
 });
 
-if (port > 0) {
+//Write to output.
+console.info('start debugger.....',args);
 
-	// start a server that creates a new session for every connection request
-	console.error(`waiting for debug protocol on port ${port}`);
-	Net.createServer((socket) => {
-		console.error('>> accepted connection from client');
-		socket.on('end', () => {
-			console.error('>> client connection closed\n');
-		});
-		const session = new EmbeddedDebugSession(fsAccessor);
-		session.setRunAsServer(true);
-		session.start(socket, socket);
-	}).listen(port);
-} else {
+DebugSession.run(GDBDebugSession);
+// if (port > 0) {
 
-	// start a single session that communicates via stdin/stdout
-	const session = new EmbeddedDebugSession(fsAccessor);
-	process.on('SIGTERM', () => {
-		session.shutdown();
-	});
-	session.start(process.stdin, process.stdout);
-}
+// 	// start a server that creates a new session for every connection request
+// 	console.error(`waiting for debug protocol on port ${port}`);
+// 	Net.createServer((socket) => {
+// 		console.error('>> accepted connection from client');
+// 		socket.on('end', () => {
+// 			console.error('>> client connection closed\n');
+// 		});
+// 		const session = new EmbeddedDebugSession(fsAccessor);
+
+// 		session.setRunAsServer(true);
+// 		session.start(socket, socket);
+// 	}).listen(port);
+// } else {
+
+// 	// start a single session that communicates via stdin/stdout
+// 	const session = new EmbeddedDebugSession(fsAccessor);
+// 	process.on('SIGTERM', () => {
+// 		session.shutdown();
+// 	});
+// 	session.start(process.stdin, process.stdout);
+// }

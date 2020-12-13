@@ -4,10 +4,11 @@
 		{
 			"name": "Extension",
 			"type": "extensionHost",
+			"trace": true,
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"${workspaceFolder}/sampleworkspace"
+				"${workspaceFolder}/test-workspace"
 			],
 			"outFiles": [
 				"${workspaceFolder}/dist/ext/**/*.js"
@@ -17,6 +18,7 @@
 		{
 			"name": "Server",
 			"type": "node",
+			"trace": true,
 			"request": "launch",
 			"cwd": "${workspaceFolder}",
 			"program": "${workspaceFolder}/src/debugAdapter.ts",

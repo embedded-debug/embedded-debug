@@ -8,9 +8,10 @@ import * as vscode from 'vscode';
 import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
 import { EmbeddedDebugSession } from './embeddedDebug';
 import { FileAccessor } from './debugRuntime';
+import { EmbeddedDebugger } from './debugger/debugger';
 
 export function activateEmbeddedDebug(context: vscode.ExtensionContext, factory?: vscode.DebugAdapterDescriptorFactory) {
-
+	console.log("factory:",factory);
 	context.subscriptions.push(
 		vscode.commands.registerCommand('extension.embedded-debug.runEditorContents', (resource: vscode.Uri) => {
 			let targetResource = resource;
@@ -104,6 +105,8 @@ export function activateEmbeddedDebug(context: vscode.ExtensionContext, factory?
 		}
 	});
 	*/
+
+	new EmbeddedDebugger(context);
 }
 
 class MockConfigurationProvider implements vscode.DebugConfigurationProvider {
