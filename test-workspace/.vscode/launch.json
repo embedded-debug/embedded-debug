@@ -9,11 +9,11 @@
 			"type": "embedded-debug",
 			"request": "launch",
 			"name": "Debug Rust Program",
-			"program": "${workspaceFolder}/path to bin",
+			"program": "${workspaceFolder}/blinky.elf",
 			"servertype": "openocd",
 			"cwd": "${workspaceRoot}",
 			"gdbpath": "riscv32-unknown-elf-gdb",
-			"serverpath": "path to openocd",
+			"serverpath": "/home/liangdi/.platformio/packages/tool-openocd-gd32v/bin/openocd",
 			"configFiles": [
 				"jtag.cfg",
 				"gd32vf103.cfg"

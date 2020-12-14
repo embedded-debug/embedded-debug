@@ -25,11 +25,16 @@ export class DebugConfigurationProvider implements vscode.DebugConfigurationProv
         }
         if (!config.debuggerArgs) { config.debuggerArgs = []; }
         
-        const type = config.servertype;
+        // TODO implement other server later
+        // const type = config.servertype;
+        const type = "openocd";
 
         let validationResponse: string = null;
 
        
+        
+        
+
         if (!config.preLaunchCommands) { config.preLaunchCommands = []; }
         if (!config.postLaunchCommands) { config.postLaunchCommands = []; }
         if (!config.preAttachCommands) { config.preAttachCommands = []; }
@@ -37,13 +42,10 @@ export class DebugConfigurationProvider implements vscode.DebugConfigurationProv
         if (!config.preRestartCommands) { config.preRestartCommands = []; }
         if (!config.postRestartCommands) { config.postRestartCommands = []; }
         if (config.request !== 'launch') { config.runToMain = false; }
-        vscode.window.showInformationMessage("type:",type);
         switch (type) {
-           
             case 'openocd':
                 validationResponse = this.verifyOpenOCDConfiguration(folder, config);
                 break;
-          
             default:
                 // tslint:disable-next-line:max-line-length
                 validationResponse = 'Invalid servertype parameters. The following values are supported:  "openocd",  "external"';

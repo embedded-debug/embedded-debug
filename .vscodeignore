@@ -6,9 +6,8 @@ src/**/*
 out/tests/**/*
 **/*.js.map
 build
-sampleworkspace
+test-workspace
 node_modules
 tsconfig.json
 out
-sampleWebWorkerWorkspace
-sampleWorkspace
+yarn-error.log

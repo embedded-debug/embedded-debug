@@ -21,11 +21,9 @@ import { activateEmbeddedDebug, workspaceFileAccessor } from './activateEmbedded
 const runMode: 'external' | 'server' | 'namedPipeServer' | 'inline' = 'inline';
 
 export function activate(context: vscode.ExtensionContext) {
-	console.info('debgger activate')
 	activateEmbeddedDebug(context);
 }
 
 export function deactivate() {
-	console.info('debgger deactivate')
 	// nothing to do
 }

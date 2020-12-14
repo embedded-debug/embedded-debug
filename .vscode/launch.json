@@ -14,27 +14,7 @@
 				"${workspaceFolder}/dist/ext/**/*.js"
 			],
 			"preLaunchTask": "npm: watch"
-		},
-		{
-			"name": "Server",
-			"type": "node",
-			"trace": true,
-			"request": "launch",
-			"cwd": "${workspaceFolder}",
-			"program": "${workspaceFolder}/src/debugAdapter.ts",
-			"args": [
-				"--server=4711"
-			],
-			"outFiles": [
-				"${workspaceFolder}/out/**/*.js"
-			]
-		},
-		
-	],
-	"compounds": [
-		{
-			"name": "Extension + Server",
-			"configurations": [ "Extension", "Server" ]
 		}
+		
 	]
 }

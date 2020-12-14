@@ -2,8 +2,8 @@
   "name": "embedded-debug",
   "displayName": "Embedded Debug",
   "version": "0.0.1",
-  "publisher": "liangdi",
-  "description": "Embedded Debug for VS Code.",
+  "publisher": "Liangdi",
+  "description": "Embedded Debug  for VS Code.",
   "author": {
     "name": "Liangdi",
     "email": "wu@liangdi.me"
@@ -130,7 +130,7 @@
       {
         "type": "embedded-debug",
         "label": "Embedded Debug",
-        "program": "./out/debugAdapter.js",
+        "program": "./dist/ext/da.js",
         "runtime": "node",
         "configurationAttributes": {
           "launch": {
@@ -179,8 +179,7 @@
             "type": "embedded-debug",
             "request": "launch",
             "name": "Ask for file name",
-            "program": "${workspaceFolder}/${command:AskForProgramName}",
-            "stopOnEntry": true
+            "program": "${workspaceFolder}/${command:AskForProgramName}"
           }
         ],
         "configurationSnippets": [
