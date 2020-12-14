@@ -12,8 +12,6 @@
 			"program": "${workspaceFolder}/blinky.elf",
 			"servertype": "openocd",
 			"cwd": "${workspaceRoot}",
-			"gdbpath": "riscv32-unknown-elf-gdb",
-			"serverpath": "/home/liangdi/.platformio/packages/tool-openocd-gd32v/bin/openocd",
 			"configFiles": [
 				"jtag.cfg",
 				"gd32vf103.cfg"

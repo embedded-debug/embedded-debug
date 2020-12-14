@@ -33,7 +33,6 @@ export class DebugConfigurationProvider implements vscode.DebugConfigurationProv
 
        
         
-        
 
         if (!config.preLaunchCommands) { config.preLaunchCommands = []; }
         if (!config.postLaunchCommands) { config.postLaunchCommands = []; }
@@ -57,9 +56,7 @@ export class DebugConfigurationProvider implements vscode.DebugConfigurationProv
         if (!config.toolchainPath) {
             config.toolchainPath = configuration.armToolchainPath;
         }
-        if (!config.toolchainPrefix) {
-            config.toolchainPrefix = configuration.armToolchainPrefix || 'arm-none-eabi';
-        }
+ 
         
         config.extensionPath = this.context.extensionPath;
         if (os.platform() === 'win32') {
@@ -84,7 +81,47 @@ export class DebugConfigurationProvider implements vscode.DebugConfigurationProv
         if (!config.serverpath) {
             const configuration = vscode.workspace.getConfiguration('embedded-debug');
             config.serverpath = configuration.openocdPath;
+        } 
+
+        if(!config.serverpath) {
+            console.log('config openocd path use extension bin path')
+            let baseFolder = this.context.extensionPath;
+            switch(os.platform()) {
+                case 'darwin':
+                    config.serverpath = baseFolder + '/support/bin/mac/openocd';
+                    break;
+                case 'win32':
+                    config.serverpath = baseFolder + '\\support\\bin\\win\\openocd.exe';
+
+                    break;
+                case 'linux':
+                    config.serverpath = baseFolder + '/support/bin/linux/openocd';
+                    break;
+            }
         }
+
+
+        if(!config.gdbpath) {
+            const configuration = vscode.workspace.getConfiguration('embedded-debug');
+            config.gdbpath = configuration.gdbpath;
+        }
+        if(!config.gdbpath) {
+            console.log('config gdb path use extension bin path')
+            let baseFolder = this.context.extensionPath;
+            switch(os.platform()) {
+                case 'darwin':
+                    config.gdbpath = baseFolder + '/support/bin/mac/gdb';
+                    break;
+                case 'win32':
+                    config.gdbpath = baseFolder + '\\support\\bin\\win\\gdb.exe';
+                    break;
+                case 'linux':
+                    config.gdbpath = baseFolder + '/support/bin/linux/gdb';
+                    break;
+            }
+            console.log('gdbpath:', config.gdbpath)
+        }
+
 
         if (config.rtos && OPENOCD_VALID_RTOS.indexOf(config.rtos) === -1) {
             return `The following RTOS values are supported by OpenOCD: ${OPENOCD_VALID_RTOS.join(' ')}`;

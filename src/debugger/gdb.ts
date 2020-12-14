@@ -219,6 +219,7 @@ export class GDBDebugSession extends DebugSession {
             );  ``
             return;
         }
+        this.handleMsg('log',`args: ${JSON.stringify(this.args)}\n`);
         
         const ControllerClass = SERVER_TYPE_MAP[this.args.servertype];
         this.serverController = new ControllerClass();
@@ -254,7 +255,7 @@ export class GDBDebugSession extends DebugSession {
             if (this.args.gdbpath) {
                 gdbExePath = this.args.gdbpath;
             }
-
+            this.handleMsg('log',`gdbpath: ${gdbExePath}\n`);
             // Check to see if gdb exists.
             if (path.isAbsolute(gdbExePath)) {
                 if (fs.existsSync(gdbExePath) === false) {
