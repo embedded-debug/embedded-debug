@@ -6,3 +6,4 @@ npm-debug.log
 embedded-debug.txt
 *.vsix
 .DS_Store
+yarn-error.log

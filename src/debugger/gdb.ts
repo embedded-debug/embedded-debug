@@ -471,7 +471,6 @@ export class GDBDebugSession extends DebugSession {
 
     private createPortsMap(ports: number[]) {
         const numProcs = this.args.numberOfProcessors;
-        this.handleMsg("log",`num pomproces:${numProcs}\n`)
         this.ports = {};
         let idx = 0;
         // Ports are allocated so that all ports of same type come consecutively, then next and
